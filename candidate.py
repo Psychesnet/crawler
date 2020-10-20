@@ -4,20 +4,44 @@
 Created on Sat Mar 11 17:11:09 2017
 @author: ghosty
 """
-import csv
-import ast
-import httplib2
+from datetime import timedelta
+from urllib.request import urlopen
 from urllib.parse import urlencode
 from bs4 import BeautifulSoup
 import pandas as pd
+import numpy as np
+import csv
+import ast
+import httplib2
 import datetime
-from datetime import timedelta
+import requests
+import sched
+import time
+import json
 
 stockList = [\
-        ['3380', '明泰'], \
-        ['2230','台泥']\
+        ['1216', '統一'], \
+        ['2884', '玉山金'], \
+        ['1717', '長興材料'], \
+        ['2002', '中鋼'], \
+        ['1232', '大統益'], \
+        ['1301', '台朔'], \
+        ['1303', '南亞'], \
+        ['2201', '裕隆'], \
+        ['2353', '宏碁'], \
+        ['9921', '巨大'], \
+        ['2351', '順德'], \
+        ['9930', '中聯資'], \
+        ['5871', '中租-KY'], \
+        ['9941', '裕融'], \
+        ['6592', '和潤'], \
+        ['9904', '寶成'], \
+        ['2204', '中華車'], \
+        ['2330','台積電']\
         ]
 ProfileTitle = ['股票代碼', '股票名稱', '產業類別', \
+        '當盤成交價','當盤成交量','累積成交量', \
+        '高價(2.5%)', '合理價(5%)', '低價(10%)', \
         '現金股利', '股票股利', '盈餘配股', '公積配股', \
         '成立時間', '上市(櫃)時間', \
         '營業毛利率', '營業利益率', '稅前淨利率', '資產報酬率', '股東權益報酬率', '每股淨值', \
@@ -25,7 +49,25 @@ ProfileTitle = ['股票代碼', '股票名稱', '產業類別', \
         '前4年盈餘', '前3年盈餘', '前2年盈餘', '前1年盈餘'
         ]
 
-def getProfile(stockID,stockName):
+def check_float(var, multiple):
+    try:
+        return float(var) * multiple
+    except ValueError:
+        return 0;
+
+def stock_crawler(stockID):
+    #　query data
+    query_url = "http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_"+stockID+".tw&json=1&delay=0"
+    data = json.loads(urlopen(query_url).read())
+    # 過濾出有用到的欄位
+    columns = ['c','n','z','tv','v','o','h','l','y']
+    df = pd.DataFrame(data['msgArray'], columns=columns)
+    df.columns = ['股票代號','公司簡稱','當盤成交價','當盤成交量','累積成交量','開盤價','最高價','最低價','昨收價']
+    instance_list = (df['當盤成交價'].tolist()[0], df['當盤成交量'].tolist()[0], df['累積成交量'].tolist()[0])
+    df = df[0:0]
+    return instance_list;
+
+def get_profile(stockID,stockName):
     url = 'https://tw.stock.yahoo.com/d/s/company_'+stockID+'.html'
     conn = httplib2.Http(cache=None)
     headers = {'Content-type': 'application/x-www-form-urlencoded',
@@ -45,11 +87,7 @@ def getProfile(stockID,stockName):
         earnshare = table1.select('tr')[3].select('td')[3].text.strip("元")
         remainshare = table1.select('tr')[4].select('td')[3].text.strip("元")
         setupDate = table1.select('tr')[2].select('td')[1].text.strip()
-        #setupDate[0] = int(setupDate[0])+1911
-        #setupDate=str(setupDate[0])+'/'+setupDate[1]+'/'+setupDate[2]
         onboardDate = table1.select('tr')[3].select('td')[1].text.strip()
-        #onboardDate[0] = int(onboardDate[0])+1911
-        #onboardDate = str(onboardDate[0])+'/'+onboardDate[1]+'/'+onboardDate[2]
         grossprofit = table2.select('tr')[1].select('td')[1].text.strip()
         netprofit = table2.select('tr')[2].select('td')[1].text.strip()
         taxprofit = table2.select('tr')[3].select('td')[1].text.strip()
@@ -64,7 +102,10 @@ def getProfile(stockID,stockName):
         by3 = table2.select('tr')[2].select('td')[5].text.strip().strip("元")
         by2 = table2.select('tr')[3].select('td')[5].text.strip().strip("元")
         by1 = table2.select('tr')[4].select('td')[5].text.strip().strip("元")
+        instance_info = stock_crawler(stockID)
         result = list([stockID, stockName, category , \
+            instance_info[0], instance_info[1], instance_info[2], \
+            check_float(cashshare, 40), check_float(cashshare, 20), check_float(cashshare, 10), \
             cashshare, stockshare, earnshare, remainshare, \
             setupDate, onboardDate, \
             grossprofit, netprofit, taxprofit, rate, earn, netvalue, \
@@ -80,12 +121,12 @@ def getProfile(stockID,stockName):
 listProfile=[ProfileTitle]
 for row in stockList:
 #for row in stockList:
-    result = getProfile(row[0],row[1])
+    result = get_profile(row[0],row[1])
     print(result)
     listProfile.append(result)
 #break #test once
 #save result
-f = open("~/Desktop/candidate.csv","w")
+f = open("candidate.csv","w")
 w = csv.writer(f, lineterminator='\n')
 w.writerows(listProfile)
 f.close()
