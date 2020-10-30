@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from datetime import timedelta
-from urllib.request import urlopen
-from urllib.parse import urlencode
-from bs4 import BeautifulSoup
-import pandas as pd
-import numpy as np
+import urllib
+import pandas
 import csv
 import ast
-import httplib2
 import datetime
 import requests
 import sched
 import time
 import json
+import sys
+from bs4 import BeautifulSoup
 
 titles = ['股票代碼', '股票名稱', '產業類別', \
         '當盤成交價','當盤成交量','累積成交量', \
@@ -35,10 +32,10 @@ def check_float(var, multiple):
 def stock_crawler(stockID):
     #　query data
     query_url = "http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_"+stockID+".tw&json=1&delay=0"
-    data = json.loads(urlopen(query_url).read())
+    data = json.loads(urllib.request.urlopen(query_url).read())
     # 過濾出有用到的欄位
     columns = ['c','n','z','tv','v','o','h','l','y']
-    df = pd.DataFrame(data['msgArray'], columns=columns)
+    df = pandas.DataFrame(data['msgArray'], columns=columns)
     df.columns = ['股票代號','公司簡稱','當盤成交價','當盤成交量','累積成交量','開盤價','最高價','最低價','昨收價']
     instance_list = (df['當盤成交價'].tolist()[0], df['當盤成交量'].tolist()[0], df['累積成交量'].tolist()[0])
     df = df[0:0]
@@ -46,15 +43,9 @@ def stock_crawler(stockID):
 
 def profile(stockID, stockName):
     url = 'https://tw.stock.yahoo.com/d/s/company_'+stockID+'.html'
-    conn = httplib2.Http(cache=None)
-    headers = {'Content-type': 'application/x-www-form-urlencoded',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        #'User-Agent':'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0'} #windows
-        #'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0'} #Linux
-        'User-Agent':'Mozilla/5.0 (Android; Mobile; rv:40.0) Gecko/40.0 Firefox/40.0'} #android phone
-    resp, doc = conn.request(url, method='GET', body=None, headers=headers)
-    #docStr = str(doc.decode('cp950'));
-    soup = BeautifulSoup(doc, 'html.parser')
+    resp = urllib.request.urlopen(url)
+    html = resp.read()
+    soup = BeautifulSoup(html.decode('cp950','ignore').encode('utf-8'), features="lxml")
     try:
         table1 = soup.findAll(text='基 本 資 料')[0].parent.parent.parent
         table2 = soup.findAll(text='營業毛利率')[0].parent.parent.parent
