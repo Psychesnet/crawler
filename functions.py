@@ -12,8 +12,9 @@ import json
 import sys
 from bs4 import BeautifulSoup
 
-titles = ['股票代碼', '股票名稱', '產業類別', \
-        '高價(2.5%)', '合理價(5%)', '低價(10%)', '當盤成交價', \
+titles = ['庫存', '股票代碼', '股票名稱', '產業類別', \
+        '高價(2.5%)', '合理價(5%)', '低價(10%)', \
+        '殖利率', '當盤成交價', \
         '現金股利', '股票股利', '盈餘配股', '公積配股', \
         '成立時間', '上市(櫃)時間', \
         '營業毛利率', '營業利益率', '稅前淨利率', '資產報酬率', '股東權益報酬率', '每股淨值', \
@@ -43,7 +44,10 @@ def price(id):
         print('股票代碼錯誤或查無此代碼!!')
         return 0
 
-def profile(id):
+def percentage(stock_price, cash_share):
+    return round(float(cash_share) * 100.0/float(stock_price), 2)
+
+def profile(id, had):
     url = 'https://tw.stock.yahoo.com/d/s/company_'+id+'.html'
     resp = urllib.request.urlopen(url)
     html = resp.read()
@@ -73,8 +77,10 @@ def profile(id):
         by3 = table2.select('tr')[2].select('td')[5].text.strip().strip("元")
         by2 = table2.select('tr')[3].select('td')[5].text.strip().strip("元")
         by1 = table2.select('tr')[4].select('td')[5].text.strip().strip("元")
-        result = list([id, name, category , \
-                check_float(cashshare, 40), check_float(cashshare, 20), check_float(cashshare, 10), price(id), \
+        current_price = price(id)
+        result = list([had, id, name, category , \
+                check_float(cashshare, 40), check_float(cashshare, 20), check_float(cashshare, 10), \
+                percentage(current_price, cashshare), current_price, \
                 cashshare, stockshare, earnshare, remainshare, \
                 setupDate, onboardDate, \
                 grossprofit, netprofit, taxprofit, rate, earn, netvalue, \
@@ -91,7 +97,7 @@ def profile(id):
 def parse_and_save(candidate, name):
     candidate_list = [titles]
     for row in candidate:
-        result = profile(str(row))
+        result = profile(str(row[0]), row[1])
         print(result)
         candidate_list.append(result)
 
