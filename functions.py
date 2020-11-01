@@ -14,13 +14,13 @@ from bs4 import BeautifulSoup
 
 titles = ['庫存', '股票代碼', '股票名稱', '產業類別', \
         '高價(2.5%)', '合理價(5%)', '低價(10%)', \
-        '殖利率', '當盤成交價', \
+        '殖利率(%)', '當盤成交價', \
         '現金股利', '股票股利', '盈餘配股', '公積配股', \
         '成立時間', '上市(櫃)時間', \
         '營業毛利率', '營業利益率', '稅前淨利率', '資產報酬率', '股東權益報酬率', '每股淨值', \
         '前4季盈餘', '前3季盈餘', '前2季盈餘', '前1季盈餘', \
         '前4年盈餘', '前3年盈餘', '前2年盈餘', '前1年盈餘', \
-        '連結'
+        '個股資訊', '持股比例',
         ]
 
 def check_float(var, multiple):
@@ -86,7 +86,8 @@ def profile(id, had):
                 grossprofit, netprofit, taxprofit, rate, earn, netvalue, \
                 bq4, bq3, bq2, bq1, \
                 by4, by3, by2, by1, \
-                'https://tw.stock.yahoo.com/d/s/company_'+id+'.html'
+                'https://tw.stock.yahoo.com/d/s/company_'+id+'.html', \
+                'https://fubon-ebrokerdj.fbs.com.tw/z/zc/zck/zck_'+id+'.djhtm', \
                 ])
     except:
         result = [id, name, 'access fail']
