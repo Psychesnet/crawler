@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 import numpy
 import requests
 import datetime
@@ -188,9 +189,9 @@ class StockHelper:
                     self.item_with_average_norm("股東權益報酬率", Items.ROE, ">= 8%")),
                 "基本檢查項目", png_name)
         self.database[Table.Charts].append(png_name)
-        #print("負債權益比: {}".format(self.database[Table.Items][Items.DebtEquityRatio]))
-        #print("流動比: {}".format(self.database[Table.Items][Items.CurrentRatio]))
-        #print("股東權益報酬率 :{}".format(self.database[Table.Items][Items.ROE]))
+        print("負債權益比: {}".format(self.database[Table.Items][Items.DebtEquityRatio]))
+        print("流動比: {}".format(self.database[Table.Items][Items.CurrentRatio]))
+        print("股東權益報酬率 :{}".format(self.database[Table.Items][Items.ROE]))
         # 營業活動現金流 vs 淨利 vs 投資活動現金流 vs 融資活動現金流
         png_name = "./{0}/CASHOvsNetIncomeVsCASHIvsCAFA.png".format(self.stock_id)
         self.draw_bar(self.database[Table.YearSeason], "Year.Season",
@@ -204,10 +205,10 @@ class StockHelper:
                     self.item_with_norm("融資活動現金流", "負為發放股利或還債")),
                 "現金流", png_name)
         self.database[Table.Charts].append(png_name)
-        #print("營業活動現金流: {}".format(self.database[Table.Items][Items.CASHO]))
-        #print("淨利: {}".format(self.database[Table.Items][Items.NetIncome]))
-        #print("投資活動現金流: {}".format(self.database[Table.Items][Items.CASHI]))
-        #print("融資活動現金流: {}".format(self.database[Table.Items][Items.CAFA]))
+        print("營業活動現金流: {}".format(self.database[Table.Items][Items.CASHO]))
+        print("淨利: {}".format(self.database[Table.Items][Items.NetIncome]))
+        print("投資活動現金流: {}".format(self.database[Table.Items][Items.CASHI]))
+        print("融資活動現金流: {}".format(self.database[Table.Items][Items.CAFA]))
         # 營業費用率
         self.database[Table.Items].setdefault(Items.OperatingExpenseRatio, [])
         for m, d in zip(self.database[Table.Items][Items.OperatingExpenses], self.database[Table.Items][Items.GrossRevenue]):
@@ -233,9 +234,9 @@ class StockHelper:
                     self.item_with_average_norm("淨利率", Items.ProfitMargin, "^")),
                 "公司營運能力", png_name)
         self.database[Table.Charts].append(png_name)
-        #print("毛利率: {}".format(self.database[Table.Items][Items.GrossMargin]))
-        #print("營業費用率: {}".format(self.database[Table.Items][Items.OperatingExpenseRatio]))
-        #print("淨利率: {}".format(self.database[Table.Items][Items.ProfitMargin]))
+        print("毛利率: {}".format(self.database[Table.Items][Items.GrossMargin]))
+        print("營業費用率: {}".format(self.database[Table.Items][Items.OperatingExpenseRatio]))
+        print("淨利率: {}".format(self.database[Table.Items][Items.ProfitMargin]))
         # 資產報酬率
         self.database[Table.Items].setdefault(Items.ROA, [])
         for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.TotalAssets]):
@@ -261,9 +262,9 @@ class StockHelper:
                     self.item_with_average_norm("資產報酬率", Items.ROA, "")),
                 "報酬率", png_name)
         self.database[Table.Charts].append(png_name)
-        #print("資產週轉率: {}".format(self.database[Table.Items][Items.AssetTurnover]))
-        #print("股東權益報酬率: {}".format(self.database[Table.Items][Items.ROE]))
-        #print("資產報酬率: {}".format(self.database[Table.Items][Items.ROA]))
+        print("資產週轉率: {}".format(self.database[Table.Items][Items.AssetTurnover]))
+        print("股東權益報酬率: {}".format(self.database[Table.Items][Items.ROE]))
+        print("資產報酬率: {}".format(self.database[Table.Items][Items.ROA]))
         # 每股股利
         self.database[Table.Items].setdefault(Items.DPS, [])
         for m, d in zip(self.database[Table.Items][Items.CashDividends], self.database[Table.Items][Items.CommonStock]):
@@ -287,9 +288,9 @@ class StockHelper:
                     self.item_with_norm("每股股利", "^")),
                 "報酬率", png_name)
         self.database[Table.Charts].append(png_name)
-        #print("每股盈餘: {}".format(self.database[Table.Items][Items.EPS]))
-        #print("每股股利: {}".format(self.database[Table.Items][Items.DPS]))
-        #print("股票配息率: {}".format(self.database[Table.Items][Items.PayoutRatio]))
+        print("每股盈餘: {}".format(self.database[Table.Items][Items.EPS]))
+        print("每股股利: {}".format(self.database[Table.Items][Items.DPS]))
+        print("股票配息率: {}".format(self.database[Table.Items][Items.PayoutRatio]))
         # 營業收入 vs 業外收入 vs 稅前淨利
         png_name = "./{0}/GrossRevenueVSTotalNonOperatingRevenueVSNetIncomeBeforeTax.png".format(self.stock_id)
         self.draw_line(self.database[Table.YearSeason], "Year.Season",
@@ -301,9 +302,12 @@ class StockHelper:
                     self.item_with_norm("稅前淨利", "^")),
                 "本業收入比重", png_name)
         self.database[Table.Charts].append(png_name)
+        print("營業收入: {}".format(self.database[Table.Items][Items.GrossRevenue]))
+        print("業外收入: {}".format(self.database[Table.Items][Items.TotalNonOperatingRevenue]))
+        print("稅前淨利: {}".format(self.database[Table.Items][Items.NetIncomeBeforeTax]))
 
     def xlxs_dump(self, ws, with_png):
-        PNG_H = 14
+        PNG_H = 12
         PNG_W = 5
         if self.index == 1:
             self.xlsx_dump_title(ws)
@@ -392,6 +396,7 @@ class StockHelper:
         backup_file = "{0}/b.html".format(backup_folder)
         try:
             if not os.path.exists(backup_file):
+                time.sleep(3);
                 okay = self.crawl(backup_file, BalanceSheet, year, season)
                 if not okay:
                     return False
@@ -412,7 +417,7 @@ class StockHelper:
                         Table.Items, Items.LongTermLoan)
                 self.find_and_update_item(soup, '　資產總額', '　資產總計',
                         Table.Items, Items.TotalAssets)
-                self.find_and_update_item(soup, '　　　　普通股股本', None,
+                self.find_and_update_item(soup, '　　　普通股股本', '　　　　普通股股本',
                         Table.Items, Items.CommonStock)
         except Exception as e:
             print("{0} at update_balance_sheet".format(e))
@@ -426,6 +431,7 @@ class StockHelper:
         backup_file = "{0}/p.html".format(backup_folder)
         try:
             if not os.path.exists(backup_file):
+                time.sleep(3);
                 okay = self.crawl(backup_file, ProfitAndLose, year, season)
                 if not okay:
                     return False
@@ -464,6 +470,7 @@ class StockHelper:
         backup_file = "{0}/c.html".format(backup_folder)
         try:
             if not os.path.exists(backup_file):
+                time.sleep(3);
                 okay = self.crawl(backup_file, CashFlowStatement, year, season)
                 if not okay:
                     return False
@@ -517,6 +524,8 @@ class StockHelper:
             if not table:
                 table = soup.findAll(text='上市、上櫃及興櫃公司101年(含)以前之財報資料請至採IFRSs前之')
             if not table:
+                table = soup.findAll(text='Overrun - 查詢過於頻繁,請稍後再試!!')
+            if not table:
                 with open(file, 'wb') as fd:
                     for chunk in resp.iter_content(chunk_size=1024):
                         fd.write(chunk)
@@ -555,7 +564,7 @@ class StockHelper:
 # STEP 2
 # go to ~/.matplotlib/ to remove cache
 plt.rcParams['font.sans-serif'] = ['Taipei Sans TC Beta']
-candidates = (1102, 6462, 2618, 8406, 2633, 0)
+candidates = (5904, 2912, 5903, 2345, 2330, 3034, 1216, 1215, 2377, 2379, 1101, 1102, 0)
 workbook = xlsxwriter.Workbook('reports.xlsx')
 worksheet = workbook.add_worksheet("年報")
 for i, id in enumerate(candidates, start=1):
