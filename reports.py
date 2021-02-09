@@ -75,6 +75,10 @@ class Items(enum.Enum):
     CAFA = 304
     # 發放現金股利
     CashDividends = 305
+    # 折舊費用
+    Depreciation = 306
+    # 攤銷費用
+    Amortization = 307
 
     # create by functions
     # 毛利率 = 營業毛利/營業收入(^)
@@ -97,6 +101,8 @@ class Items(enum.Enum):
     DPS = 408
     # 股票配息率 = 每股股利÷每股盈餘(EPS)×100%
     PayoutRatio = 409
+    # 業主盈餘＝公司淨收入+折舊+耗損+攤提-資本支出-必要營運資金
+    OwnersEarning = 410
 
 
 class StockHelper:
@@ -279,6 +285,16 @@ class StockHelper:
                 self.database[Table.Items][Items.PayoutRatio].append(float(0))
             else:
                 self.database[Table.Items][Items.PayoutRatio].append(float(m/d))
+        # 業主盈餘
+        self.database[Table.Items].setdefault(Items.OwnersEarning, [])
+        for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.Depreciation]):
+            self.database[Table.Items][Items.OwnersEarning].append(float(m+d))
+        for i, v in enumerate(self.database[Table.Items][Items.Amortization]):
+            self.database[Table.Items][Items.OwnersEarning][i] += v;
+        for i, v in enumerate(self.database[Table.Items][Items.Amortization]):
+            self.database[Table.Items][Items.OwnersEarning][i] += v;
+        for i, v in enumerate(self.database[Table.Items][Items.CASHI]):
+            self.database[Table.Items][Items.OwnersEarning][i] -= v;
         # EPS vs 每股股利 vs 股票配息率
         png_name = "./{0}/EPSvsDPSvsPayoutRatio.png".format(self.stock_id)
         self.draw_bar(self.database[Table.YearSeason], "Year.Season",
@@ -291,20 +307,23 @@ class StockHelper:
         print("每股盈餘: {}".format(self.database[Table.Items][Items.EPS]))
         print("每股股利: {}".format(self.database[Table.Items][Items.DPS]))
         print("股票配息率: {}".format(self.database[Table.Items][Items.PayoutRatio]))
-        # 營業收入 vs 業外收入 vs 稅前淨利
-        png_name = "./{0}/GrossRevenueVSTotalNonOperatingRevenueVSNetIncomeBeforeTax.png".format(self.stock_id)
+        # 營業收入 vs 業外收入 vs 稅前淨利 vs 業主盈餘
+        png_name = "./{0}/GrossRevenueVSTotalNonOperatingRevenueVSNetIncomeBeforeTaxVSOwnersEarning.png".format(self.stock_id)
         self.draw_line(self.database[Table.YearSeason], "Year.Season",
                 (self.database[Table.Items][Items.GrossRevenue],
                     self.database[Table.Items][Items.TotalNonOperatingRevenue],
-                    self.database[Table.Items][Items.NetIncomeBeforeTax]),
+                    self.database[Table.Items][Items.NetIncomeBeforeTax],
+                    self.database[Table.Items][Items.OwnersEarning]),
                 (self.item_with_norm("營業收入", "^"),
                     self.item_with_norm("業外收入", "v"),
-                    self.item_with_norm("稅前淨利", "^")),
+                    self.item_with_norm("稅前淨利", "^"),
+                    self.item_with_norm("業主盈餘", "^")),
                 "本業收入比重", png_name)
         self.database[Table.Charts].append(png_name)
         print("營業收入: {}".format(self.database[Table.Items][Items.GrossRevenue]))
         print("業外收入: {}".format(self.database[Table.Items][Items.TotalNonOperatingRevenue]))
         print("稅前淨利: {}".format(self.database[Table.Items][Items.NetIncomeBeforeTax]))
+        print("業主盈餘: {}".format(self.database[Table.Items][Items.OwnersEarning]))
 
     def xlxs_dump(self, ws, with_png):
         PNG_H = 12
@@ -333,10 +352,10 @@ class StockHelper:
             category, netvalue, bq1, bq2, bq3, by1, by2 ,by3)
         for y, val in enumerate(current_data):
             if with_png:
-                ws.write((self.index-1)*PNG_H+1, y, val)
+                ws.write(((self.index-1)*PNG_H)+1, y, val)
         if with_png:
             for y, val in enumerate(self.database[Table.Charts]):
-                ws.insert_image((self.index-1)*PNG_H+2, y*PNG_W, val, {'x_scale':0.5, 'y_scale':0.5})
+                ws.insert_image(((self.index-1)*(PNG_H+2))+2, y*PNG_W, val, {'x_scale':0.5, 'y_scale':0.5})
 
     def xlsx_dump_title(self, ws):
         titles = ('代號', '股價', '產業類別', '每股淨值',
@@ -489,6 +508,10 @@ class StockHelper:
                         Table.Items, Items.CAFA)
                 self.find_and_update_item(soup, '　發放現金股利', None,
                         Table.Items, Items.CashDividends)
+                self.find_and_update_item(soup, '　　　折舊費用', None,
+                        Table.Items, Items.Depreciation)
+                self.find_and_update_item(soup, '　　　攤銷費用', None,
+                        Table.Items, Items.Amortization)
         except Exception as e:
             print("{0} at update_cash_flow".format(e))
             return False
@@ -525,6 +548,8 @@ class StockHelper:
                 table = soup.findAll(text='上市、上櫃及興櫃公司101年(含)以前之財報資料請至採IFRSs前之')
             if not table:
                 table = soup.findAll(text='Overrun - 查詢過於頻繁,請稍後再試!!')
+            if not table:
+                table = soup.findAll(text='Forbidden - 查詢過於頻繁,請稍後再試!!')
             if not table:
                 with open(file, 'wb') as fd:
                     for chunk in resp.iter_content(chunk_size=1024):
@@ -564,7 +589,7 @@ class StockHelper:
 # STEP 2
 # go to ~/.matplotlib/ to remove cache
 plt.rcParams['font.sans-serif'] = ['Taipei Sans TC Beta']
-candidates = (5904, 2912, 5903, 2345, 2330, 3034, 1216, 1215, 2377, 2379, 1101, 1102, 0)
+candidates = (5904, 2912, 5903, 2345, 2330, 3034, 1216, 1215, 2377, 2379, 1101, 1102, 2357, 4938, 0)
 workbook = xlsxwriter.Workbook('reports.xlsx')
 worksheet = workbook.add_worksheet("年報")
 for i, id in enumerate(candidates, start=1):
