@@ -326,7 +326,7 @@ class StockHelper:
         print("業主盈餘: {}".format(self.database[Table.Items][Items.OwnersEarning]))
 
     def xlxs_dump(self, ws, with_png):
-        PNG_H = 12
+        PNG_H = 13
         PNG_W = 5
         if self.index == 1:
             self.xlsx_dump_title(ws)
@@ -355,7 +355,7 @@ class StockHelper:
                 ws.write(((self.index-1)*PNG_H)+1, y, val)
         if with_png:
             for y, val in enumerate(self.database[Table.Charts]):
-                ws.insert_image(((self.index-1)*(PNG_H+2))+2, y*PNG_W, val, {'x_scale':0.5, 'y_scale':0.5})
+                ws.insert_image(((self.index-1)*(PNG_H))+2, y*PNG_W, val, {'x_scale':0.5, 'y_scale':0.5})
 
     def xlsx_dump_title(self, ws):
         titles = ('代號', '股價', '產業類別', '每股淨值',
