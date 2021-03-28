@@ -589,7 +589,7 @@ class StockHelper:
 # STEP 2
 # go to ~/.matplotlib/ to remove cache
 plt.rcParams['font.sans-serif'] = ['Taipei Sans TC Beta']
-candidates = (5904, 2912, 5903, 2345, 2330, 3034, 1216, 1215, 2377, 2379, 1101, 1102, 2357, 4938, 0)
+candidates = (9958, 2337, 6186, 2617, 5483, 6669, 5201, 2492, 6488, 2337, 3227, 3563, 1309, 4953, 3515, 1102, 2539, 6203, 1101, 2642, 2912, 1308, 3293, 9914, 2345, 3218, 1216, 2404, 1730, 3034, 5820, 2227, 5904, 1215, 5609, 8069, 2633, 5903, 4205, 3008, 9921, 2729, 2207, 1232, 1268, 1707, 2330)
 workbook = xlsxwriter.Workbook('reports.xlsx')
 worksheet = workbook.add_worksheet("年報")
 for i, id in enumerate(candidates, start=1):
