@@ -82,27 +82,27 @@ class Items(enum.Enum):
 
     # create by functions
     # 毛利率 = 營業毛利/營業收入(^)
-    GrossMargin = 400
+    GrossMargin = 900
     # 負債權益比 = 負債總額/權益總額(v)
-    DebtEquityRatio = 401
+    DebtEquityRatio = 901
     # 流動比 = 流動資產/流動負債
-    CurrentRatio = 402
+    CurrentRatio = 902
     # 股東權益報酬率 = 淨利/權益總額
-    ROE = 403
+    ROE = 903
     # 營運費用率 = 營業費用/營業收入(v)
-    OperatingExpenseRatio = 404
+    OperatingExpenseRatio = 904
     # 淨利率 = 營業淨利/營業收入(^)
-    ProfitMargin = 405
+    ProfitMargin = 905
     # 資產報酬率 = 稅後淨利/平均總資產
-    ROA = 406
+    ROA = 906
     # 資產周轉率 = 營業收入/資產總額
-    AssetTurnover = 407
+    AssetTurnover = 907
     # 每股股利 = (權益總額+母公司業主（淨利∕損)/普通股股本
-    DPS = 408
+    DPS = 908
     # 股票配息率 = 每股股利÷每股盈餘(EPS)×100%
-    PayoutRatio = 409
+    PayoutRatio = 909
     # 業主盈餘＝公司淨收入+折舊+耗損+攤提-資本支出-必要營運資金
-    OwnersEarning = 410
+    OwnersEarning = 910
 
 
 class StockHelper:
@@ -128,7 +128,7 @@ class StockHelper:
         return sum(lst) / len(lst)
 
     def item_with_average_norm(self, text, item, norm):
-        return "{}({:.3f}):{}".format(text,
+        return "{}({:.3f}) {}".format(text,
             self.average(self.database[Table.Items][item]), norm)
 
     def item_with_norm(self, text, norm):
@@ -156,6 +156,23 @@ class StockHelper:
     def calcuate_and_save(self):
         print(self.stock_id)
         print("年度: {}".format(self.database[Table.YearSeason]))
+        # 營業收入 vs 業外收入 vs 淨利
+        # 觀察營業收入是否逐年上升
+        # 觀察業外收入過大
+        # 觀察淨利是否逐年上升
+        png_name = "./{0}/GrossRevenueVSTotalNonOperatingRevenueVSNetIncome.png".format(self.stock_id)
+        self.draw_line(self.database[Table.YearSeason], "Year.Season",
+                (self.database[Table.Items][Items.GrossRevenue],
+                    self.database[Table.Items][Items.TotalNonOperatingRevenue],
+                    self.database[Table.Items][Items.NetIncome]),
+                (self.item_with_norm("營業收入", "up"),
+                    self.item_with_norm("業外收入", "down"),
+                    self.item_with_norm("淨利", "up")),
+                "本業收入比重", png_name)
+        self.database[Table.Charts].append(png_name)
+        print("營業收入: {}".format(self.database[Table.Items][Items.GrossRevenue]))
+        print("業外收入: {}".format(self.database[Table.Items][Items.TotalNonOperatingRevenue]))
+        print("淨利: {}".format(self.database[Table.Items][Items.NetIncome]))
         # 毛利率
         self.database[Table.Items].setdefault(Items.GrossMargin, [])
         for m, d in zip(self.database[Table.Items][Items.GrossProfit], self.database[Table.Items][Items.GrossRevenue]):
@@ -163,76 +180,6 @@ class StockHelper:
                 self.database[Table.Items][Items.GrossMargin].append(float(0))
             else:
                 self.database[Table.Items][Items.GrossMargin].append(float(m*100/d))
-        # 負債權益比
-        self.database[Table.Items].setdefault(Items.DebtEquityRatio, [])
-        for m, d in zip(self.database[Table.Items][Items.TotalLiabilities], self.database[Table.Items][Items.TotalEquity]):
-            if d == 0:
-                self.database[Table.Items][Items.DebtEquityRatio].append(float(0))
-            else:
-                self.database[Table.Items][Items.DebtEquityRatio].append(float(m*100/d))
-        # 流動比
-        self.database[Table.Items].setdefault(Items.CurrentRatio, [])
-        for m, d in zip(self.database[Table.Items][Items.CurrentAssets], self.database[Table.Items][Items.CurrentLiabilities]):
-            if d == 0:
-                self.database[Table.Items][Items.CurrentRatio].append(float(0))
-            else:
-                self.database[Table.Items][Items.CurrentRatio].append(float(m*100/d))
-        # 股東權益報酬率
-        self.database[Table.Items].setdefault(Items.ROE, [])
-        for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.TotalEquity]):
-            if d == 0:
-                self.database[Table.Items][Items.ROE].append(float(0))
-            else:
-                self.database[Table.Items][Items.ROE].append(float(m*100/d))
-        # 負債權益比 vs 流動比 vs 股東權益報酬率
-        png_name = "./{0}/DebtEquityRatioVSCurrentRatioVSROE.png".format(self.stock_id)
-        self.draw_line(self.database[Table.YearSeason], "Year.Season",
-                (self.database[Table.Items][Items.DebtEquityRatio],
-                    self.database[Table.Items][Items.CurrentRatio],
-                    self.database[Table.Items][Items.ROE]),
-                (self.item_with_average_norm("負債權益比", Items.DebtEquityRatio, ""),
-                    self.item_with_average_norm("流動比", Items.CurrentRatio, ""),
-                    self.item_with_average_norm("股東權益報酬率", Items.ROE, "")),
-                "基本檢查項目", png_name)
-        self.database[Table.Charts].append(png_name)
-        print("負債權益比: {}".format(self.database[Table.Items][Items.DebtEquityRatio]))
-        print("流動比: {}".format(self.database[Table.Items][Items.CurrentRatio]))
-        print("股東權益報酬率 :{}".format(self.database[Table.Items][Items.ROE]))
-        # 營業活動現金流 vs 淨利
-        png_name = "./{0}/CASHOvsNet.png".format(self.stock_id)
-        self.draw_bar(self.database[Table.YearSeason], "Year.Season",
-                (self.database[Table.Items][Items.CASHO],
-                    self.database[Table.Items][Items.NetIncome]),
-                (self.item_with_norm("營業活動現金流", ""),
-                    self.item_with_norm("淨利", "")),
-                "現金流", png_name)
-        self.database[Table.Charts].append(png_name)
-        print("營業活動現金流: {}".format(self.database[Table.Items][Items.CASHO]))
-        print("淨利: {}".format(self.database[Table.Items][Items.NetIncome]))
-        # 業主盈餘
-        self.database[Table.Items].setdefault(Items.OwnersEarning, [])
-        for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.Depreciation]):
-            self.database[Table.Items][Items.OwnersEarning].append(float(m+d))
-        for i, v in enumerate(self.database[Table.Items][Items.Amortization]):
-            self.database[Table.Items][Items.OwnersEarning][i] += v;
-        for i, v in enumerate(self.database[Table.Items][Items.Amortization]):
-            self.database[Table.Items][Items.OwnersEarning][i] += v;
-        for i, v in enumerate(self.database[Table.Items][Items.CASHI]):
-            self.database[Table.Items][Items.OwnersEarning][i] -= v;
-        # 投資活動現金流 vs 融資活動現金流 vs 業主盈餘
-        png_name = "./{0}/CASHIvsCAFAvsOwnersEarning.png".format(self.stock_id)
-        self.draw_bar(self.database[Table.YearSeason], "Year.Season",
-                (self.database[Table.Items][Items.CASHI],
-                    self.database[Table.Items][Items.CAFA],
-                    self.database[Table.Items][Items.OwnersEarning]),
-                (self.item_with_norm("投資活動現金流", "負為投資資產"),
-                    self.item_with_norm("融資活動現金流", "負為發放股利或還債"),
-                    self.item_with_norm("業主盈餘", "")),
-                "盈餘操作", png_name)
-        self.database[Table.Charts].append(png_name)
-        print("投資活動現金流: {}".format(self.database[Table.Items][Items.CASHI]))
-        print("融資活動現金流: {}".format(self.database[Table.Items][Items.CAFA]))
-        print("業主盈餘: {}".format(self.database[Table.Items][Items.OwnersEarning]))
         # 營業費用率
         self.database[Table.Items].setdefault(Items.OperatingExpenseRatio, [])
         for m, d in zip(self.database[Table.Items][Items.OperatingExpenses], self.database[Table.Items][Items.GrossRevenue]):
@@ -247,20 +194,73 @@ class StockHelper:
                 self.database[Table.Items][Items.ProfitMargin].append(float(0))
             else:
                 self.database[Table.Items][Items.ProfitMargin].append(float(m*100/d))
-        # 毛利率 vs 營業費用率 vs 淨利率
+        # 股東權益報酬率
+        self.database[Table.Items].setdefault(Items.ROE, [])
+        for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.TotalEquity]):
+            if d == 0:
+                self.database[Table.Items][Items.ROE].append(float(0))
+            else:
+                self.database[Table.Items][Items.ROE].append(float(m*100/d))
+        # 毛利率 vs 營業費用率 vs 淨利率 vs 股東權益報酬率
+        # 當產量愈大，產品愈穩定，毛利會上升
+        # 營業費用需持平或下降
+        # 觀察淨利是否逐年上升
         png_name = "./{0}/GrossMarginVSOperatingIncomeVSNetIncome.png".format(self.stock_id)
         self.draw_line(self.database[Table.YearSeason], "Year.Season",
                 (self.database[Table.Items][Items.GrossMargin],
                     self.database[Table.Items][Items.OperatingExpenseRatio],
-                    self.database[Table.Items][Items.ProfitMargin]),
-                (self.item_with_average_norm("毛利率", Items.GrossMargin, "^"),
-                    self.item_with_average_norm("營業費用率", Items.OperatingExpenseRatio, "v"),
-                    self.item_with_average_norm("淨利率", Items.ProfitMargin, "^")),
+                    self.database[Table.Items][Items.ProfitMargin],
+                    self.database[Table.Items][Items.ROE]),
+                (self.item_with_average_norm("毛利率", Items.GrossMargin, "up"),
+                    self.item_with_average_norm("營業費用率", Items.OperatingExpenseRatio, "down"),
+                    self.item_with_average_norm("淨利率", Items.ProfitMargin, "up"),
+                    self.item_with_average_norm("股東權益報酬率", Items.ROE, ">15%")),
                 "公司營運能力", png_name)
         self.database[Table.Charts].append(png_name)
         print("毛利率: {}".format(self.database[Table.Items][Items.GrossMargin]))
         print("營業費用率: {}".format(self.database[Table.Items][Items.OperatingExpenseRatio]))
         print("淨利率: {}".format(self.database[Table.Items][Items.ProfitMargin]))
+        print("股東權益報酬率: {}".format(self.database[Table.Items][Items.ROE]))
+        # 股價
+        # 大盤
+        # 投資活動現金 vs 融資活動現金流
+        # 基本上不要有正的就行了
+        png_name = "./{0}/CASHIvsCAFA.png".format(self.stock_id)
+        self.draw_bar(self.database[Table.YearSeason], "Year.Season",
+                (self.database[Table.Items][Items.CASHI],
+                    self.database[Table.Items][Items.CAFA]),
+                (self.item_with_norm("投資活動現金流", "負為投資資產"),
+                    self.item_with_norm("融資活動現金流", "負為發放股利或還債")),
+                "融資活動", png_name)
+        self.database[Table.Charts].append(png_name)
+        print("投資活動現金流: {}".format(self.database[Table.Items][Items.CASHI]))
+        print("融資活動現金流: {}".format(self.database[Table.Items][Items.CAFA]))
+        # 業主盈餘
+        self.database[Table.Items].setdefault(Items.OwnersEarning, [])
+        for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.Depreciation]):
+            self.database[Table.Items][Items.OwnersEarning].append(float(m+d))
+        for i, v in enumerate(self.database[Table.Items][Items.Amortization]):
+            self.database[Table.Items][Items.OwnersEarning][i] += v;
+        for i, v in enumerate(self.database[Table.Items][Items.CASHI]):
+            self.database[Table.Items][Items.OwnersEarning][i] -= v;
+        # 營業活動現金流 vs 業主盈餘
+        png_name = "./{0}/CASHOvsOwnersEarning.png".format(self.stock_id)
+        self.draw_bar(self.database[Table.YearSeason], "Year.Season",
+                (self.database[Table.Items][Items.OwnersEarning],
+                    self.database[Table.Items][Items.CASHO]),
+                (self.item_with_norm("業主盈餘", ""),
+                    self.item_with_norm("營業活動現金流", "")),
+                "現金流", png_name)
+        self.database[Table.Charts].append(png_name)
+        print("業主盈餘: {}".format(self.database[Table.Items][Items.OwnersEarning]))
+        print("營業活動現金流: {}".format(self.database[Table.Items][Items.CASHO]))
+        # 負債權益比
+        self.database[Table.Items].setdefault(Items.DebtEquityRatio, [])
+        for m, d in zip(self.database[Table.Items][Items.TotalLiabilities], self.database[Table.Items][Items.TotalEquity]):
+            if d == 0:
+                self.database[Table.Items][Items.DebtEquityRatio].append(float(0))
+            else:
+                self.database[Table.Items][Items.DebtEquityRatio].append(float(m*100/d))
         # 資產報酬率
         self.database[Table.Items].setdefault(Items.ROA, [])
         for m, d in zip(self.database[Table.Items][Items.NetIncome], self.database[Table.Items][Items.TotalAssets]):
@@ -275,19 +275,22 @@ class StockHelper:
                 self.database[Table.Items][Items.AssetTurnover].append(float(0))
             else:
                 self.database[Table.Items][Items.AssetTurnover].append(float(m*100/d))
-        # 資產週轉率 vs 股東權益報酬率 vs 資產報酬率
-        png_name = "./{0}/AssetTurnoverVsROEvsROA.png".format(self.stock_id)
+        # 負債權益比 vs 資產報酬率 vs 資產週轉率
+        # 觀察是否負債有拉高
+        # 觀察是否投資新的資產
+        # 觀察資產週轉率是否過低，非有效使用資產
+        png_name = "./{0}/DebtEquityRatioVsAssetTurnoverVsROA.png".format(self.stock_id)
         self.draw_line(self.database[Table.YearSeason], "Year.Season",
-                (self.database[Table.Items][Items.AssetTurnover],
-                    self.database[Table.Items][Items.ROE],
+                (self.database[Table.Items][Items.DebtEquityRatio],
+                    self.database[Table.Items][Items.AssetTurnover],
                     self.database[Table.Items][Items.ROA]),
-                (self.item_with_average_norm("資產週轉率", Items.AssetTurnover, ""),
-                    self.item_with_average_norm("股東權益報酬率", Items.ROE, ""),
+                (self.item_with_average_norm("負債權益比", Items.DebtEquityRatio, "<150%"),
+                    self.item_with_average_norm("資產週轉率", Items.AssetTurnover, ""),
                     self.item_with_average_norm("資產報酬率", Items.ROA, "")),
-                "報酬率", png_name)
+                "資產報酬率", png_name)
         self.database[Table.Charts].append(png_name)
+        print("負債權益比: {}".format(self.database[Table.Items][Items.DebtEquityRatio]))
         print("資產週轉率: {}".format(self.database[Table.Items][Items.AssetTurnover]))
-        print("股東權益報酬率: {}".format(self.database[Table.Items][Items.ROE]))
         print("資產報酬率: {}".format(self.database[Table.Items][Items.ROA]))
         # 每股股利
         self.database[Table.Items].setdefault(Items.DPS, [])
@@ -296,6 +299,27 @@ class StockHelper:
                 self.database[Table.Items][Items.DPS].append(float(0))
             else:
                 self.database[Table.Items][Items.DPS].append(float(m*(-10)/d))
+        # 每股盈餘 vs 每股股利
+        png_name = "./{0}/EPSvsDPS.png".format(self.stock_id)
+        self.draw_bar(self.database[Table.YearSeason], "Year.Season",
+                (self.database[Table.Items][Items.EPS],
+                    self.database[Table.Items][Items.DPS]),
+                (self.item_with_norm("每股盈餘", "^"),
+                    self.item_with_norm("每股股利", "^")),
+                "每股盈餘和股利", png_name)
+        self.database[Table.Charts].append(png_name)
+        print("每股盈餘: {}".format(self.database[Table.Items][Items.EPS]))
+        print("每股股利: {}".format(self.database[Table.Items][Items.DPS]))
+        # 在外流通股數
+        # 觀察董事持股是否有>20%，才有革命情感
+        # 觀察公司是否有錢回買股票
+        # png_name = "./{0}/CommonStock.png".format(self.stock_id)
+        # self.draw_bar(self.database[Table.YearSeason], "Year.Season",
+                # (self.database[Table.Items][Items.CommonStock]),
+                # (self.item_with_norm("普通股本", "")),
+                # "回買持股", png_name)
+        # self.database[Table.Charts].append(png_name)
+        print("普通股本: {}".format(self.database[Table.Items][Items.CommonStock]))
         # 股票配息率
         self.database[Table.Items].setdefault(Items.PayoutRatio, [])
         for m, d in zip(self.database[Table.Items][Items.DPS], self.database[Table.Items][Items.EPS]):
@@ -303,32 +327,15 @@ class StockHelper:
                 self.database[Table.Items][Items.PayoutRatio].append(float(0))
             else:
                 self.database[Table.Items][Items.PayoutRatio].append(float(m/d))
-        # EPS vs 每股股利
-        png_name = "./{0}/EPSvsDPS.png".format(self.stock_id)
-        self.draw_bar(self.database[Table.YearSeason], "Year.Season",
-                (self.database[Table.Items][Items.EPS],
-                    self.database[Table.Items][Items.DPS]),
-                (self.item_with_norm("每股盈餘", "^"),
-                    self.item_with_norm("每股股利", "^")),
-                "EPS vs DPS", png_name)
-        self.database[Table.Charts].append(png_name)
-        print("每股盈餘: {}".format(self.database[Table.Items][Items.EPS]))
-        print("每股股利: {}".format(self.database[Table.Items][Items.DPS]))
         print("股票配息率: {}".format(self.database[Table.Items][Items.PayoutRatio]))
-        # 營業收入 vs 業外收入 vs 稅前淨利
-        png_name = "./{0}/GrossRevenueVSTotalNonOperatingRevenueVSNetIncomeBeforeTaxVSOwnersEarning.png".format(self.stock_id)
-        self.draw_line(self.database[Table.YearSeason], "Year.Season",
-                (self.database[Table.Items][Items.GrossRevenue],
-                    self.database[Table.Items][Items.TotalNonOperatingRevenue],
-                    self.database[Table.Items][Items.NetIncomeBeforeTax]),
-                (self.item_with_norm("營業收入", "^"),
-                    self.item_with_norm("業外收入", "v"),
-                    self.item_with_norm("稅前淨利", "^")),
-                "本業收入比重", png_name)
-        self.database[Table.Charts].append(png_name)
-        print("營業收入: {}".format(self.database[Table.Items][Items.GrossRevenue]))
-        print("業外收入: {}".format(self.database[Table.Items][Items.TotalNonOperatingRevenue]))
-        print("稅前淨利: {}".format(self.database[Table.Items][Items.NetIncomeBeforeTax]))
+        # 流動比
+        self.database[Table.Items].setdefault(Items.CurrentRatio, [])
+        for m, d in zip(self.database[Table.Items][Items.CurrentAssets], self.database[Table.Items][Items.CurrentLiabilities]):
+            if d == 0:
+                self.database[Table.Items][Items.CurrentRatio].append(float(0))
+            else:
+                self.database[Table.Items][Items.CurrentRatio].append(float(m*100/d))
+        print("流動比: {}".format(self.database[Table.Items][Items.CurrentRatio]))
 
     def xlxs_dump(self, ws, with_png):
         PNG_H = 13
